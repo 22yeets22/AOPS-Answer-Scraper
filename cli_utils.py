@@ -19,7 +19,7 @@ def get_valid_int(prompt_text, min_val, max_val, min_msg=None, max_msg=None, all
                 if max_msg:
                     print_error(max_msg)
                 else:
-                    print_error(f"Please enter a number less than or equal to {max_val}.")
+                    print_error(max_msg if max_msg else f"Please enter a number less than or equal to {max_val}.")
                 continue
 
             return value
