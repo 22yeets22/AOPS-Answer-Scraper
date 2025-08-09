@@ -146,7 +146,7 @@ def find_solutions(url, answers):
 
         # Find all <h2> tags to identify sections (section index 0 - first section)
         h2_tags = mw_content.find_all("h2")
-        h2_tags.pop(0)  # remove the "contents" h2
+        h2_tags.pop(0)  # remove the "contents" h2 (the first one is always the table of contents)
         if not (0 <= section_index < len(h2_tags)):
             return []
 
@@ -237,7 +237,7 @@ def main():
 
             # Construct URL and scrape answers
             url = construct_url(test_year, test_type)
-            answers = scrape_answers(url)  #
+            answers = scrape_answers(url)
 
             if answers:
                 print(f"\n{Fore.BLUE}{Style.BRIGHT}🎯 Answers for {test_year} {test_type}:")
