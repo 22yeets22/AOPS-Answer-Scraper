@@ -1,11 +1,15 @@
+import os
 import sys
+import tempfile
 from datetime import datetime
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 from fake_useragent import UserAgent
 from pylatexenc.latex2text import LatexNodes2Text
+from term_image.image import from_file
 
 from cli_utils import (
     get_valid_int,
@@ -139,37 +143,40 @@ def find_solutions(url, answers):
                 result.append(text_el.text.strip())
         return result
 
-    def extract_solution_content(soup, section_index):
+    def extract_solution_content(soup, section_index, base_url):
         mw_content = soup.find("div", class_="mw-parser-output")
         if not mw_content:
             return []
 
-        # Find all <h2> tags to identify sections (section index 0 - first section)
         h2_tags = mw_content.find_all("h2")
-        h2_tags.pop(0)  # remove the "contents" h2 (the first one is always the table of contents)
+        if h2_tags:
+            h2_tags.pop(0)
         if not (0 <= section_index < len(h2_tags)):
             return []
 
         selected_h2 = h2_tags[section_index]
         solution_content = []
 
-        # find all siblings, then stop at next h2 (which is the end of the section)
         sibling = selected_h2.next_sibling
         while sibling:
             if getattr(sibling, "name", None) == "h2":
                 break
+
             if getattr(sibling, "name", None) in ["p", "ul", "ol", "div"]:
-                # Get all text, including lists and math images
                 for elem in sibling.descendants:
                     if getattr(elem, "name", None) == "img":
-                        latex = elem.get("alt", "")
-                        solution_content.append(converter.latex_to_text(latex).strip("\n"))
+                        # give the url to work with later
+                        img_src = elem.get("src", "")
+                        if img_src:
+                            img_url = urljoin(base_url, img_src)
+                            solution_content.append({"image_url": img_url})
+
                     elif isinstance(elem, str):
                         text = elem.strip()
                         if text:
-                            solution_content.append(text.strip())
-            solution_content.append("\n")
+                            solution_content.append(text)
             sibling = sibling.next_sibling
+
         return solution_content
 
     max_question = len(answers)
@@ -203,11 +210,26 @@ def find_solutions(url, answers):
                 continue
 
             print_info("Fetching and displaying solution...")
-            content = extract_solution_content(soup, section_choice - 1)
+            content = extract_solution_content(soup, section_choice - 1, problem_url)
 
             if content:
                 print_success("📝 Solution:")
-                print(" ".join(content))
+                for item in content:
+                    if isinstance(item, str):
+                        print(item, end=" ")
+                    elif isinstance(item, dict) and "image_url" in item:
+                        try:
+                            # cooked ahh might try to do something later but this is good for now
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+                                tmp_file.write(requests.get(item["image_url"]).content)
+                                tmp_path = tmp_file.name
+
+                            print("\n")
+                            image = from_file(tmp_path)
+                            image.draw()
+                        finally:
+                            os.remove(tmp_path)
+                print()  # xtra newline
             else:
                 print_error("No readable solution content found in the selected section.")
 
