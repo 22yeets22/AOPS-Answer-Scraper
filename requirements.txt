@@ -3,3 +3,5 @@ beautifulsoup4
 colorama
 fake-useragent
 pylatexenc
+term-image
+Pillow
