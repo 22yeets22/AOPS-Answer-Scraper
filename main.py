@@ -167,9 +167,13 @@ def find_solutions(url, answers):
                     if getattr(elem, "name", None) == "img":
                         # give the url to work with later
                         img_src = elem.get("src", "")
-                        if img_src:
-                            img_url = urljoin(base_url, img_src)
-                            solution_content.append({"image_url": img_url})
+                        img_alt = elem.get("alt", "")
+                        if img_src and img_alt:
+                            if "[asy]" in img_alt:  # its an image for sure
+                                img_url = urljoin(base_url, img_src)
+                                solution_content.append({"image_url": img_url})
+                            else:
+                                solution_content.append(converter.latex_to_text(img_alt).strip("\n"))
 
                     elif isinstance(elem, str):
                         text = elem.strip()
