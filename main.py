@@ -1,15 +1,15 @@
-import os
 import sys
-import tempfile
 from datetime import datetime
+from io import BytesIO
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 from fake_useragent import UserAgent
+from PIL import Image
 from pylatexenc.latex2text import LatexNodes2Text
-from term_image.image import from_file
+from term_image.image import AutoImage
 
 from cli_utils import (
     get_valid_int,
@@ -223,16 +223,25 @@ def find_solutions(url, answers):
                         print(item, end=" ")
                     elif isinstance(item, dict) and "image_url" in item:
                         try:
-                            # cooked ahh might try to do something later but this is good for now
-                            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-                                tmp_file.write(requests.get(item["image_url"]).content)
-                                tmp_path = tmp_file.name
+                            # fetch into memory
+                            img_data = requests.get(item["image_url"]).content
+                            img = Image.open(BytesIO(img_data))
 
+                            # write white over transparent bg (chatgpt help)
+                            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                                white_bg = Image.new("RGB", img.size, (255, 255, 255))
+                                white_bg.paste(img, mask=img.getchannel("A") if "A" in img.getbands() else None)
+                                img = white_bg
+                            else:
+                                img = img.convert("RGB")
+
+                            # draw in terminal
                             print("\n")
-                            image = from_file(tmp_path)
+                            image = AutoImage(img)  # AutoImage can take a PIL.Image object
                             image.draw()
-                        finally:
-                            os.remove(tmp_path)
+                        except Exception as e:
+                            print_error(f"Failed to display image: {e}")
+
                 print()  # xtra newline
             else:
                 print_error("No readable solution content found in the selected section.")
