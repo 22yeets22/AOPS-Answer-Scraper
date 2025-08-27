@@ -14,4 +14,8 @@ Easily scrape answers and solutions from the Art of Problem Solving (AoPS) websi
 ```pip install -r requirements.txt```
 
 ## 🚀 Usage
-```python main.py```
+1. ```python main.py```
+2. Input the date you want to scrape (ex 2018)
+3. Input the competition you want to scrape (ex AIME)
+4. Choose questions to view
+5. Repeat!
