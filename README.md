@@ -1,7 +1,7 @@
 # AOPS Answer Scraper
 Easily scrape answers and solutions from the Art of Problem Solving (AoPS) website for math contests like AMC, AIME, AJHSME, and more.
 
-> [! NOTE]
+> [!NOTE]
 > This project requires you to login!
 
 ## ✨ Features
